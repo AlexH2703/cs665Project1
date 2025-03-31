@@ -18,17 +18,14 @@ def get_db_connection():
     conn = None
     try:
         conn = pyodbc.connect(f'DRIVER={{SQL Server}};SERVER={server};DATABASE={database};Trusted_Connection=yes')
-        print("Connection successful!")
     except Exception as e:
         print(f"Error connecting to database: {e}")
     return conn
 
 def execute_query(query, params=None):
     """
-    Execute a query and return the result.
-    :param query: The SQL query to execute.
-    :param params: Any parameters for the query (default is None).
-    :return: The result of the query.
+    Executes SQL and returns results if the query returns any (e.g. SELECT).
+    Automatically commits changes for data-modifying queries.
     """
     conn = get_db_connection()
     if conn:
@@ -38,8 +35,13 @@ def execute_query(query, params=None):
                 cursor.execute(query, params)
             else:
                 cursor.execute(query)
-            result = cursor.fetchall()
-            return result
+
+            # Only try to fetch results if the query returned any (SELECT or similar)
+            if cursor.description is not None:
+                return cursor.fetchall()
+            else:
+                conn.commit()
+                return None
         except Exception as e:
             print(f"Error executing query: {e}")
         finally:
