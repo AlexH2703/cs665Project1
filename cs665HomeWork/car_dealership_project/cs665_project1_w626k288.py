@@ -25,6 +25,24 @@ def view_customers():
             clean_row = tuple(val[0] if isinstance(val, tuple) else val for val in row)
             customer_list.insert("", "end", values=clean_row)
 
+def view_inventory():
+    query = """
+    SELECT Car.CarID, Car.Make, Car.Model, Car.Year, Inventory.Price, Inventory.Status
+    FROM Car
+    JOIN Inventory ON Car.CarID = Inventory.CarID
+    WHERE Inventory.Status = 'Available'
+    """
+    rows = myDatabase.execute_query(query)
+    inventory_list.delete(*inventory_list.get_children())  # Clear current entries in the Treeview
+
+    if rows:
+        for row in rows:
+            # Ensure all row values are scalar (not tuple-wrapped)
+            clean_row = tuple(val[0] if isinstance(val, tuple) else val for val in row)
+            inventory_list.insert("", "end", values=clean_row)
+
+
+
 def delete_customer():
     selected = customer_list.selection()
     if not selected:
@@ -73,5 +91,13 @@ customer_list = ttk.Treeview(root, columns=("ID", "First", "Last", "Phone", "Ema
 for col in ("ID", "First", "Last", "Phone", "Email"):
     customer_list.heading(col, text=col)
 customer_list.pack(pady=10)
+
+# --- Inventory viewer ---
+inventory_list = ttk.Treeview(root, columns=("CarID", "Make", "Model", "Year", "Price", "Status"), show='headings')
+for col in ("CarID", "Make", "Model", "Year", "Price", "Status"):
+    inventory_list.heading(col, text=col)
+inventory_list.pack(pady=10)
+
+tk.Button(root, text="View Inventory", command=view_inventory).pack(pady=5)
 
 root.mainloop()
