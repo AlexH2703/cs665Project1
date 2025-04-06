@@ -67,13 +67,20 @@ def add_sale():
         messagebox.showwarning("Input Error", "All fields must be filled!")
         return
 
-    query = """
+    insert_query = """
     INSERT INTO Sales (CustomerID, InventoryID, TechnicianName, SaleDate, TotalPrice)
     VALUES (?, ?, ?, ?, (SELECT Price FROM Inventory WHERE InventoryID = ?))
     """
-    params = (customer_id_value, inventory_id_value, technician_name_value, sale_date_value, inventory_id_value)
-    myDatabase.execute_query(query, params)
-    messagebox.showinfo("Success", "Sale added successfully.")
+    insert_params = (customer_id_value, inventory_id_value, technician_name_value, sale_date_value, inventory_id_value)
+    
+    update_query = "UPDATE Inventory SET Status = 'Sold' WHERE InventoryID = ?"
+
+    myDatabase.execute_query(insert_query, insert_params)
+    myDatabase.execute_query(update_query, (inventory_id_value,))
+    
+    messagebox.showinfo("Success", "Sale added and vehicle marked as sold.")
+    view_sales()
+
 
 def delete_customer():
     selected = treeview.selection()  # use the unified treeview
@@ -89,6 +96,39 @@ def delete_customer():
         view_customers()  # refresh view
     except ValueError:
         messagebox.showerror("Error", "Invalid customer ID format.")
+
+def delete_sale():
+    selected = treeview.selection()
+    if not selected:
+        messagebox.showwarning("Warning", "No sale selected.")
+        return
+
+    try:
+        sale_id = int(treeview.item(selected[0])['values'][0])  # First column is SaleID
+
+        # First, get the InventoryID for the sale
+        get_inventory_query = "SELECT InventoryID FROM Sales WHERE SaleID = ?"
+        inventory_id_row = myDatabase.execute_query(get_inventory_query, (sale_id,))
+        
+        if not inventory_id_row:
+            messagebox.showerror("Error", "Sale not found.")
+            return
+        
+        inventory_id = inventory_id_row[0][0]  # Extract the InventoryID
+
+        # Set the car status back to 'Available'
+        update_inventory_query = "UPDATE Inventory SET Status = 'Available' WHERE InventoryID = ?"
+        myDatabase.execute_query(update_inventory_query, (inventory_id,))
+
+        # Now delete the sale
+        delete_query = "DELETE FROM Sales WHERE SaleID = ?"
+        myDatabase.execute_query(delete_query, (sale_id,))
+
+        messagebox.showinfo("Success", "Sale deleted and vehicle marked as available.")
+        view_sales()
+    
+    except ValueError:
+        messagebox.showerror("Error", "Invalid Sale ID format.")
 
 
 
@@ -106,43 +146,46 @@ last_name = tk.StringVar()
 phone = tk.StringVar()
 email = tk.StringVar()
 
-tk.Label(input_frame, text="First Name").grid(row=0, column=0, padx=5, pady=5)
-tk.Entry(input_frame, textvariable=first_name).grid(row=0, column=1, padx=5, pady=5)
+tk.Button(input_frame, text="View Customers", command=view_customers).grid(row=0, column=2, columnspan=1, pady=5)
+tk.Button(input_frame, text="View Inventory", command=view_inventory).grid(row=0, column=4, columnspan=1, pady=5)
+tk.Button(input_frame, text="View Sales", command=view_sales).grid(row=0, column=6, columnspan=1, pady=5)
 
-tk.Label(input_frame, text="Last Name").grid(row=1, column=0, padx=5, pady=5)
-tk.Entry(input_frame, textvariable=last_name).grid(row=1, column=1, padx=5, pady=5)
+tk.Label(input_frame, text="First Name").grid(row=1, column=0, padx=5, pady=5)
+tk.Entry(input_frame, textvariable=first_name).grid(row=1, column=1, padx=5, pady=5)
 
-tk.Label(input_frame, text="Phone Number").grid(row=0, column=2, padx=5, pady=5)
-tk.Entry(input_frame, textvariable=phone).grid(row=0, column=3, padx=5, pady=5)
+tk.Label(input_frame, text="Last Name").grid(row=2, column=0, padx=5, pady=5)
+tk.Entry(input_frame, textvariable=last_name).grid(row=2, column=1, padx=5, pady=5)
 
-tk.Label(input_frame, text="Email").grid(row=1, column=2, padx=5, pady=5)
-tk.Entry(input_frame, textvariable=email).grid(row=1, column=3, padx=5, pady=5)
+tk.Label(input_frame, text="Phone Number").grid(row=1, column=2, padx=5, pady=5)
+tk.Entry(input_frame, textvariable=phone).grid(row=1, column=3, padx=5, pady=5)
 
-tk.Button(input_frame, text="Add Customer", command=add_customer).grid(row=2, column=0, columnspan=2, pady=5)
-tk.Button(input_frame, text="View Customers", command=view_customers).grid(row=4, column=0, columnspan=2, pady=5)
-tk.Button(input_frame, text="Delete Selected", command=delete_customer).grid(row=2, column=1, columnspan=2, pady=5)
+tk.Label(input_frame, text="Email").grid(row=2, column=2, padx=5, pady=5)
+tk.Entry(input_frame, textvariable=email).grid(row=2, column=3, padx=5, pady=5)
 
-tk.Button(input_frame, text="View Inventory", command=view_inventory).grid(row=4, column=1, columnspan=2, pady=5)
-tk.Button(input_frame, text="View Sales", command=view_sales).grid(row=4, column=2, columnspan=2, pady=5)
+tk.Button(input_frame, text="Add Customer", command=add_customer).grid(row=3, column=1, columnspan=1, pady=5)
+tk.Button(input_frame, text="Delete Customer", command=delete_customer).grid(row=3, column=2, columnspan=1, pady=5)
+
 # --- Sales form inputs ---
 customer_id = tk.StringVar()
 inventory_id = tk.StringVar()
 technician_name = tk.StringVar()
 sale_date = tk.StringVar()
 
-tk.Label(input_frame, text="Customer ID").grid(row=5, column=0, padx=5, pady=5)
-tk.Entry(input_frame, textvariable=customer_id).grid(row=5, column=1, padx=5, pady=5)
+tk.Label(input_frame, text="Customer ID").grid(row=1, column=5, padx=5, pady=5)
+tk.Entry(input_frame, textvariable=customer_id).grid(row=1, column=6, padx=5, pady=5)
 
-tk.Label(input_frame, text="Inventory ID").grid(row=5, column=2, padx=5, pady=5)
-tk.Entry(input_frame, textvariable=inventory_id).grid(row=5, column=3, padx=5, pady=5)
+tk.Label(input_frame, text="Inventory ID").grid(row=1, column=7, padx=5, pady=5)
+tk.Entry(input_frame, textvariable=inventory_id).grid(row=1, column=8, padx=5, pady=5)
 
-tk.Label(input_frame, text="Technician Name").grid(row=6, column=0, padx=5, pady=5)
-tk.Entry(input_frame, textvariable=technician_name).grid(row=6, column=1, padx=5, pady=5)
+tk.Label(input_frame, text="Technician Name").grid(row=2, column=5, padx=5, pady=5)
+tk.Entry(input_frame, textvariable=technician_name).grid(row=2, column=6, padx=5, pady=5)
 
-tk.Label(input_frame, text="Sale Date (YYYY-MM-DD)").grid(row=6, column=2, padx=5, pady=5)
-tk.Entry(input_frame, textvariable=sale_date).grid(row=6, column=3, padx=5, pady=5)
+tk.Label(input_frame, text="Sale Date (YYYY-MM-DD)").grid(row=2, column=7, padx=5, pady=5)
+tk.Entry(input_frame, textvariable=sale_date).grid(row=2, column=8, padx=5, pady=5)
 
-tk.Button(input_frame, text="Add Sale", command=add_sale).grid(row=7, column=0, columnspan=4, pady=5)
+tk.Button(input_frame, text="Add Sale", command=add_sale).grid(row=3, column=6, columnspan=1, pady=5)
+tk.Button(input_frame, text="Delete Sale", command=delete_sale).grid(row=3, column=7, columnspan=1, pady=5)
+
 
 # --- Treeview for displaying data ---
 treeview_frame = tk.Frame(root)
