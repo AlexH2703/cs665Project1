@@ -3,11 +3,17 @@ from tkinter import messagebox, ttk
 import myDatabase
 
 def clear_fields():
-    customer_id_var.set("")
     first_name.set("")
     last_name.set("")
     phone.set("")
     email.set("")
+    customer_id.set("")
+    inventory_id.set("")
+    technician_name.set("")
+    sale_date.set("")
+    price_inventory_id.set("")
+    new_price.set("")
+
 
 def add_customer():
     query = "INSERT INTO Customer (FirstName, LastName, PhoneNumber, Email) VALUES (?, ?, ?, ?)"
@@ -17,7 +23,7 @@ def add_customer():
     clear_fields()
 
 def update_customer():
-    cust_id = customer_id_var.get()
+    cust_id = customer_id.get()
     if not cust_id:
         messagebox.showwarning("Warning", "No customer selected.")
         return
@@ -177,21 +183,49 @@ def delete_sale():
     except ValueError:
         messagebox.showerror("Error", "Invalid Sale ID format.")
 
-def on_customer_select(event):
-    if current_view.get() != "customer":
-        return  # Only act when customer view is active
+def update_price():
+    inv_id = price_inventory_id.get()
+    price = new_price.get()
 
-    selected = treeview.selection()
-    if not selected:
+    if not inv_id or not price:
+        messagebox.showwarning("Input Error", "Both Inventory ID and new price must be provided.")
         return
 
-    values = treeview.item(selected[0], "values")
-    if values and len(values) >= 5:
-        customer_id_var.set(values[0])  # Store selected customer ID
-        first_name.set(values[1])
-        last_name.set(values[2])
-        phone.set(values[3])
-        email.set(values[4])
+    try:
+        price = float(price)
+        inv_id = int(inv_id)
+    except ValueError:
+        messagebox.showerror("Input Error", "Inventory ID must be a number and price must be a valid number.")
+        return
+
+    query = "UPDATE Inventory SET Price = ? WHERE InventoryID = ?"
+    myDatabase.execute_query(query, (price, inv_id))
+
+    messagebox.showinfo("Success", f"Price for Inventory ID {inv_id} updated to ${price:.2f}.")
+    view_inventory()
+
+
+def on_treeview_select(event):
+    selected = treeview.selection()
+    if not selected or not current_view.get():
+        return
+
+    values = treeview.item(selected[0])['values']
+
+    if current_view.get() == "customer":
+        # existing code for customers
+        if len(values) >= 5:
+            customer_id.set(values[0])
+            first_name.set(values[1])
+            last_name.set(values[2])
+            phone.set(values[3])
+            email.set(values[4])
+    elif current_view.get() == "inventory":
+        # auto-fill inventory ID and price
+        if len(values) >= 3:
+            price_inventory_id.set(values[0])
+            new_price.set(values[2])
+
 
 
 
@@ -208,7 +242,6 @@ first_name = tk.StringVar()
 last_name = tk.StringVar()
 phone = tk.StringVar()
 email = tk.StringVar()
-customer_id_var = tk.StringVar()  # Used for updating customers
 
 
 tk.Button(input_frame, text="View Customers", command=view_customers).grid(row=0, column=0, columnspan=1, pady=5)
@@ -258,6 +291,18 @@ tk.Entry(input_frame, textvariable=sale_date).grid(row=2, column=8, padx=5, pady
 tk.Button(input_frame, text="Add Sale", command=add_sale).grid(row=3, column=6, columnspan=1, pady=5)
 tk.Button(input_frame, text="Delete Sale", command=delete_sale).grid(row=3, column=7, columnspan=1, pady=5)
 
+# --- Inventory Price Update inputs ---
+price_inventory_id = tk.StringVar()
+new_price = tk.StringVar()
+
+tk.Label(input_frame, text="Inventory ID (for price update)").grid(row=4, column=0, padx=5, pady=5)
+tk.Entry(input_frame, textvariable=price_inventory_id).grid(row=4, column=1, padx=5, pady=5)
+
+tk.Label(input_frame, text="New Price").grid(row=4, column=2, padx=5, pady=5)
+tk.Entry(input_frame, textvariable=new_price).grid(row=4, column=3, padx=5, pady=5)
+
+tk.Button(input_frame, text="Update Price", command=update_price).grid(row=4, column=4, padx=5, pady=5)
+
 
 # --- Treeview for displaying data ---
 treeview_frame = tk.Frame(root)
@@ -265,7 +310,7 @@ treeview_frame.pack(pady=10)
 
 treeview = ttk.Treeview(treeview_frame, show='headings')  # Initially empty treeview
 treeview.pack()
-treeview.bind("<<TreeviewSelect>>", on_customer_select)
+treeview.bind("<<TreeviewSelect>>", on_treeview_select)
 
 
 # --- Initially show customers ---
