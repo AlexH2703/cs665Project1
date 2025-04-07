@@ -19,8 +19,21 @@ def view_customers():
     query = "SELECT * FROM Customer"
     rows = myDatabase.execute_query(query)
     display_data(rows, ["ID", "First", "Last", "Phone", "Email"])
-
 def view_inventory():
+    query = "SELECT * FROM Inventory"
+    rows = myDatabase.execute_query(query)
+    display_data(rows, ["InventoryID", "CarID", "Price", "Status"])
+def view_sales():
+    query = "SELECT * FROM Sales"
+    rows = myDatabase.execute_query(query)
+    display_data(rows, ["SaleID", "CustomerID", "InventoryID", "TechnicianName", "SaleDate", "TotalPrice"])
+def view_cars():
+    query = "SELECT * FROM Car"
+    rows = myDatabase.execute_query(query)
+    display_data(rows, ["CarID", "Make", "Model", "Year", "VIN"])
+
+
+def view_useful_inventory():
     query = """
     SELECT Car.CarID, Car.Make, Car.Model, Car.Year, Inventory.Price, Inventory.Status
     FROM Car
@@ -30,7 +43,7 @@ def view_inventory():
     rows = myDatabase.execute_query(query)
     display_data(rows, ["CarID", "Make", "Model", "Year", "Price", "Status"])
 
-def view_sales():
+def view_useful_sales():
     query = """
     SELECT Sales.SaleID, Customer.FirstName, Customer.LastName, Car.Make, Car.Model, Sales.SaleDate, Sales.TotalPrice
     FROM Sales
@@ -79,7 +92,7 @@ def add_sale():
     myDatabase.execute_query(update_query, (inventory_id_value,))
     
     messagebox.showinfo("Success", "Sale added and vehicle marked as sold.")
-    view_sales()
+    view_useful_sales()
 
 
 def delete_customer():
@@ -125,7 +138,7 @@ def delete_sale():
         myDatabase.execute_query(delete_query, (sale_id,))
 
         messagebox.showinfo("Success", "Sale deleted and vehicle marked as available.")
-        view_sales()
+        view_useful_sales()
     
     except ValueError:
         messagebox.showerror("Error", "Invalid Sale ID format.")
@@ -146,9 +159,12 @@ last_name = tk.StringVar()
 phone = tk.StringVar()
 email = tk.StringVar()
 
-tk.Button(input_frame, text="View Customers", command=view_customers).grid(row=0, column=2, columnspan=1, pady=5)
-tk.Button(input_frame, text="View Inventory", command=view_inventory).grid(row=0, column=4, columnspan=1, pady=5)
-tk.Button(input_frame, text="View Sales", command=view_sales).grid(row=0, column=6, columnspan=1, pady=5)
+tk.Button(input_frame, text="View Customers", command=view_customers).grid(row=0, column=0, columnspan=1, pady=5)
+tk.Button(input_frame, text="View Inventory", command=view_inventory).grid(row=0, column=1, columnspan=1, pady=5)
+tk.Button(input_frame, text="View Sales", command=view_sales).grid(row=0, column=2, columnspan=1, pady=5)
+tk.Button(input_frame, text="View Cars", command=view_cars).grid(row=0, column=3, columnspan=1, pady=5)
+tk.Button(input_frame, text="View Useful Inventory Info", command=view_useful_inventory).grid(row=0, column=5, columnspan=1, pady=5)
+tk.Button(input_frame, text="View Useful Sales Info", command=view_useful_sales).grid(row=0, column=6, columnspan=1, pady=5)
 
 tk.Label(input_frame, text="First Name").grid(row=1, column=0, padx=5, pady=5)
 tk.Entry(input_frame, textvariable=first_name).grid(row=1, column=1, padx=5, pady=5)
