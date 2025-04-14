@@ -13,6 +13,12 @@ def clear_fields():
     sale_date.set("")
     price_inventory_id.set("")
     new_price.set("")
+    car_make.set("")
+    car_model.set("")
+    car_year.set("")
+    car_vin.set("")
+    car_id.set("")
+
 
 
 def add_customer():
@@ -225,7 +231,48 @@ def on_treeview_select(event):
         if len(values) >= 3:
             price_inventory_id.set(values[0])
             new_price.set(values[2])
+    elif current_view.get().lower() == "car":
+        if len(values) >= 5:
+            car_id.set(values[0])
+            car_make.set(values[1])
+            car_model.set(values[2])
+            car_year.set(values[3])
+            car_vin.set(values[4])
 
+
+def add_car():
+    query = "INSERT INTO Car (Make, Model, Year, VIN) VALUES (?, ?, ?, ?)"
+    params = (car_make.get(), car_model.get(), car_year.get(), car_vin.get())
+    myDatabase.execute_query(query, params)
+    messagebox.showinfo("Success", "Car added.")
+    view_cars()
+    clear_fields()
+
+def delete_car():
+    selected = treeview.selection()
+    if not selected:
+        messagebox.showwarning("Warning", "No car selected.")
+        return
+    car_id_value = treeview.item(selected[0])['values'][0]
+    query = "DELETE FROM Car WHERE CarID = ?"
+    myDatabase.execute_query(query, (car_id_value,))
+    messagebox.showinfo("Success", "Car deleted.")
+    view_cars()
+
+def update_car():
+    if not car_id.get():
+        messagebox.showwarning("Warning", "No car selected for update.")
+        return
+    query = """
+    UPDATE Car
+    SET Make = ?, Model = ?, Year = ?, VIN = ?
+    WHERE CarID = ?
+    """
+    params = (car_make.get(), car_model.get(), car_year.get(), car_vin.get(), car_id.get())
+    myDatabase.execute_query(query, params)
+    messagebox.showinfo("Success", "Car updated.")
+    view_cars()
+    clear_fields()
 
 
 
@@ -298,10 +345,32 @@ new_price = tk.StringVar()
 tk.Label(input_frame, text="Inventory ID (for price update)").grid(row=4, column=0, padx=5, pady=5)
 tk.Entry(input_frame, textvariable=price_inventory_id).grid(row=4, column=1, padx=5, pady=5)
 
-tk.Label(input_frame, text="New Price").grid(row=4, column=2, padx=5, pady=5)
-tk.Entry(input_frame, textvariable=new_price).grid(row=4, column=3, padx=5, pady=5)
+tk.Label(input_frame, text="New Price").grid(row=5, column=0, padx=5, pady=5)
+tk.Entry(input_frame, textvariable=new_price).grid(row=5, column=1, padx=5, pady=5)
 
-tk.Button(input_frame, text="Update Price", command=update_price).grid(row=4, column=4, padx=5, pady=5)
+tk.Button(input_frame, text="Update Price", command=update_price).grid(row=6, column=1, padx=5, pady=5)
+
+car_make = tk.StringVar()
+car_model = tk.StringVar()
+car_year = tk.StringVar()
+car_vin = tk.StringVar()
+car_id = tk.StringVar()  # Used for updating/deleting
+
+tk.Label(input_frame, text="Make").grid(row=4, column=5, padx=5, pady=5)
+tk.Entry(input_frame, textvariable=car_make).grid(row=4, column=6, padx=5, pady=5)
+
+tk.Label(input_frame, text="Model").grid(row=4, column=7, padx=5, pady=5)
+tk.Entry(input_frame, textvariable=car_model).grid(row=4, column=8, padx=5, pady=5)
+
+tk.Label(input_frame, text="Year").grid(row=5, column=5, padx=5, pady=5)
+tk.Entry(input_frame, textvariable=car_year).grid(row=5, column=6, padx=5, pady=5)
+
+tk.Label(input_frame, text="VIN").grid(row=5, column=7, padx=5, pady=5)
+tk.Entry(input_frame, textvariable=car_vin).grid(row=5, column=8, padx=5, pady=5)
+
+tk.Button(input_frame, text="Add Car", command=add_car).grid(row=6, column=6, padx=5, pady=5)
+tk.Button(input_frame, text="Delete Car", command=delete_car).grid(row=6, column=7, padx=5, pady=5)
+tk.Button(input_frame, text="Update Car", command=update_car).grid(row=6, column=8, padx=5, pady=5)
 
 
 # --- Treeview for displaying data ---
